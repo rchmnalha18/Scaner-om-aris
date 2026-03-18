@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scanner Work Request - PT HYDRAXLE PERKASA</title>
+  
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  
+  <style>
+    /* CSS UNTUK ESTETIKA MODERN CORPORATE & POP-UP (MODAL) */
+    :root { 
+      --primary-blue: #2a52be; /* Warna Biru Utama Corporate */
+      --accent-orange: #ff8c00; 
+      --accent-red: #e74c3c; 
+      --success-green: #2ecc71; 
+      --bg-light: #fdf5e6; 
+      --text-main: #333;
+    }
+    
+    body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: var(--bg-light); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 15px; box-sizing: border-box; color: var(--text-main); }
+    
+    /* Kartu Utama di Halaman Standby */
+    .main-card { background: white; padding: 40px 30px; border-radius: 20px; box-shadow: 0 15px 40px rgba(0,0,0,0.08); width: 100%; max-width: 400px; text-align: center; border: 1px solid #f0f0f0; transition: all 0.3s ease; z-index: 10; }
+    .logo-container { margin-bottom: 20px; }
+    .company-name { color: var(--accent-red); font-weight: bold; font-size: 14px; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1.5px; }
+    .app-title { font-size: 24px; font-weight: 800; color: #1a1a1a; margin-bottom: 5px; }
+    .app-subtitle { font-size: 13px; color: #888; margin-bottom: 35px; }
+    
+    /* Tombol Utama untuk Buka Scanner */
+    .btn-primary-scan { background: linear-gradient(135deg, var(--accent-orange) 0%, #ff4500 100%); color: white; border: none; padding: 18px; border-radius: 12px; font-weight: bold; cursor: pointer; width: 100%; font-size: 15px; margin-bottom: 25px; box-shadow: 0 5px 20px rgba(255,69,0,0.3); transition: transform 0.2s, box-shadow 0.2s; border: 2px solid #ff4500; text-transform: uppercase; letter-spacing: 1px; }
+    .btn-primary-scan:active { transform: scale(0.98); box-shadow: 0 2px 8px rgba(255,69,0,0.15); }
+    .btn-primary-scan:hover { background: linear-gradient(135deg, #ff9500 0%, #ff5500 100%); }
+    
+    /* Box Status di Halaman Utama */
+    .status-container { text-align: left; }
+    .box { padding: 15px; border-radius: 10px; margin-bottom: 12px; border-left: 5px solid; transition: all 0.3s ease; }
+    .box-status { background: #fff5f5; border-left-color: var(--accent-red); }
+    .box-qr { background: #f0fdf4; border-left-color: var(--success-green); }
+    .label { font-size: 11px; font-weight: bold; margin-bottom: 5px; display: block; text-transform: uppercase; letter-spacing: 0.5px; color: #666; }
+    .content { font-size: 14px; color: #222; font-weight: 500; word-wrap: break-word; }
+
+    /* ========================================= */
+    /* STRUKTUR MODAL/POP-UP SCANNER (PENTING!) */
+    /* ========================================= */
+    .modal-overlay { display: none; /* Standby hidden */ position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(2px); transition: display 0.2s ease; }
+    .modal-content { display: none; /* Standby hidden */ position: relative; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 25px 60px rgba(0,0,0,0.2); width: 90%; max-width: 380px; text-align: center; border: 2px solid var(--primary-blue); z-index: 1001; }
+    
+    /* Modal Header & Tombol Close */
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #f0f0f0; padding-bottom: 15px; }
+    .modal-title { font-size: 18px; font-weight: 700; color: #333; margin: 0; }
+    .close-modal-btn { background: none; border: none; font-size: 28px; font-weight: 300; color: #aaa; cursor: pointer; line-height: 1; padding: 0; transition: color 0.2s ease; }
+    .close-modal-btn:hover { color: var(--accent-red); }
+
+    /* Area Kamera di Dalam Modal */
+    #qr-scanner-viewport { width: 100%; border-radius: 12px; margin-bottom: 20px; overflow: hidden; background: #111; border: 3px solid var(--primary-blue); box-sizing: border-box
