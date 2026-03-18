@@ -53,4 +53,185 @@
     .close-modal-btn:hover { color: var(--accent-red); }
 
     /* Area Kamera di Dalam Modal */
-    #qr-scanner-viewport { width: 100%; border-radius: 12px; margin-bottom: 20px; overflow: hidden; background: #111; border: 3px solid var(--primary-blue); box-sizing: border-box
+    #qr-scanner-viewport { width: 100%; border-radius: 12px; margin-bottom: 20px; overflow: hidden; background: #111; border: 3px solid var(--primary-blue); box-sizing: border-box; box-shadow: inset 0 0 15px rgba(42,82,190,0.4); }
+    #status-scan-modal { font-size: 13px; color: #777; font-weight: 500; }
+  </style>
+</head>
+<body>
+
+  <div class="main-card" id="landing-card">
+    <div class="logo-container">
+      <img src="https://cdn-icons-png.flaticon.com/512/7075/7075333.png" width="55" alt="Hydraxle Gear Logo">
+    </div>
+    <div class="company-name">PT. HYDRAXLE PERKASA</div>
+    <div class="app-title">Work Request</div>
+    <div class="app-subtitle">Scanner Web App (v2.0)</div>
+
+    <button class="btn-primary-scan" id="activate-scanner-btn">📸 MULAI SCAN KODE WR</button>
+
+    <div class="status-container">
+      <div class="box box-status">
+        <span class="label">STATUS SISTEM</span>
+        <div class="content" id="status-text-landing">Standby. Tekan tombol untuk scan.</div>
+      </div>
+      <div class="box box-qr">
+        <span class="label">KODE WR TERAKHIR</span>
+        <div class="content" id="last-scanned-qr-text">-</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal-content" id="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Scanner Code WR</h3>
+        <button class="close-modal-btn" id="close-modal-btn">&times;</button>
+      </div>
+      
+      <div id="qr-scanner-viewport"></div>
+      
+      <p id="status-scan-modal">Arahkan kamera ke Kode QR WR</p>
+    </div>
+  </div>
+
+  <script>
+    // =========================================
+    // KONFIGURASI: GANTI URL DI BAWAH INI DENGAN URL GAS KAMU (DENGAN /EXEC)
+    // =========================================
+    const WEB_APP_URL = "URL_WEB_APP_GAS_KAMU_DENGAN_EXEC"; 
+
+    // Referensi Elemen Landing Card
+    const activateScannerBtn = document.getElementById('activate-scanner-btn');
+    const statusTextLanding = document.getElementById('status-text-landing');
+    const lastScannedQrText = document.getElementById('last-scanned-qr-text');
+    
+    // Referensi Elemen Modal
+    const modalOverlay = document.getElementById('modal-overlay');
+    const modalContent = document.getElementById('modal-content');
+    const closeModalBtn = document.getElementById('close-modal-btn');
+    const statusScanModal = document.getElementById('status-scan-modal');
+    
+    let html5QrCode;
+
+    // FUNGSI UTAMA: Buka Modal & Aktifkan Kamera Scanner
+    function openModalAndStartScanner() {
+        modalOverlay.style.display = 'flex';
+        modalContent.style.display = 'block';
+        
+        statusScanModal.innerText = "Meminta akses kamera...";
+        statusScanModal.style.color = "#777";
+        
+        // Buat instance scanner baru di dalam viewport modal
+        html5QrCode = new Html5Qrcode("qr-scanner-viewport");
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+        // Hidupkan Kamera Belakang
+        html5QrCode.start(
+            { facingMode: "environment" },
+            config,
+            function(decodedText) {
+                // FUNGSI CALLBACK: Dieksekusi jika SUKSES SCAN Kode QR
+                handleSuccessfulScan(decodedText);
+            }
+        ).catch(err => {
+            console.error(err);
+            statusScanModal.innerText = "Akses Kamera Ditolak atau Gagal!";
+            statusScanModal.style.color = var(--accent-red);
+        });
+    }
+
+    // FUNGSI UTAMA: Matiin Kamera & Tutup Modal
+    function closeModal() {
+        if (html5QrCode && html5QrCode.isScanning) {
+            html5QrCode.stop().then(() => {
+                hideModalElements();
+            }).catch(err => { 
+                console.error("Error stop camera:", err); 
+                hideModalElements(); // Paksa tutup meski error
+            });
+        } else {
+            hideModalElements();
+        }
+    }
+
+    // Fungsi Pembantu: Sembunyikan Pop-up
+    function hideModalElements() {
+        modalOverlay.style.display = 'none';
+        modalContent.style.display = 'none';
+    }
+
+    // FUNGSI INTI: Logic Eksekusi setelah Sukses Scan
+    function handleSuccessfulScan(decodedText) {
+        // 1. Matikan kamera secara Asinkron (Hukumnya Wajib biar gak crash)
+        html5QrCode.stop().then(() => {
+            
+            // 2. Tampilkan Hasil QR di Landing Page Utama
+            lastScannedQrText.innerText = decodedText;
+            statusTextLanding.innerText = "Mencari data di Database...";
+            statusTextLanding.style.color = "#ff8c00"; // Warna Orange Standby
+
+            // 3. Tampilkan Status Sukses Sementara di Dalam Pop-up
+            statusScanModal.innerText = "Kode QR Sukses Dikenali.";
+            statusScanModal.style.color = "#2ecc71"; // Warna Sukses Hijau
+
+            // 4. Integrasi API ke Backend Google Apps Script (SINKRON!)
+            // MENGGUNAKAN PARAMETER 'qr' (Code.js) & FIX CORS REDIRECT!
+            fetch(`${WEB_APP_URL}?qr=${encodeURIComponent(decodedText)}`, { 
+                method: 'GET', 
+                redirect: 'follow' // KRITIS: Bypass CORS Keamanan Google
+            })
+                .then(response => response.json()) // Parsing ke JSON
+                .then(data => {
+                    if (data.status === "success" && data.url) {
+                        statusTextLanding.innerText = "Ditemukan: " + data.judul;
+                        statusTextLanding.style.color = "#2ecc71"; // Hijau Sukses
+                        
+                        // PERBAIKAN UX UTAMA (PERMINTAAN ALI):
+                        // A. Tutup modal/pop-up secara paksa
+                        hideModalElements();
+                        
+                        // B. Langsung pindah halaman DI TAB YANG SAMA (tanpa '_blank')
+                        setTimeout(() => { 
+                            window.top.location.href = data.url; 
+                            // Munculkan lagi tombol scan di landing page (jika user balik lagi)
+                            activateScannerBtn.style.display = "block";
+                        }, 500);
+                        
+                    } else { 
+                        handleErrorInFetch("KODE QR TIDAK DIKENALI!"); 
+                    }
+                })
+                .catch(err => { 
+                    console.error(err); 
+                    handleErrorInFetch("GAGAL TERHUBUNG KE DATABASE!"); 
+                });
+        }).catch(err => { 
+            console.error("Gagal menonaktifkan kamera pas sukses scan:", err); 
+        });
+    }
+
+    // Fungsi Pembantu: Menangani Kesalahan Saat Fetch API
+    function handleErrorInFetch(msg) {
+        statusTextLanding.innerText = msg;
+        statusTextLanding.style.color = "#e74c3c"; // Merah Error
+        activateScannerBtn.style.display = "block";
+        
+        // Tutup modal agar user balik ke landing page utama
+        hideModalElements();
+    }
+
+    // --- EVENT LISTENERS (INPUT USER) ---
+    
+    // Klik tombol utama untuk scan
+    activateScannerBtn.addEventListener('click', openModalAndStartScanner);
+    
+    // Klik tombol 'X' di modal
+    closeModalBtn.addEventListener('click', closeModal);
+    
+    // Klik di area overlay gelap (di luar kartu modal) untuk menutup
+    modalOverlay.addEventListener('click', function(event) {
+        if (event.target === modalOverlay) { closeModal(); }
+    });
+  </script>
+</body>
+</html>
